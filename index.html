@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Repair & Project Log</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-orange-50 min-h-screen">
+<div class="max-w-4xl mx-auto p-4">
+  <h1 class="text-3xl font-bold text-orange-900 mb-6 flex items-center gap-2">
+    🔨 Home Repair &amp; Project Log
+  </h1>
+
+  <!-- Summary -->
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-orange-700 text-white rounded-xl p-4">
+      <p class="text-sm opacity-80">年間合計費用</p>
+      <p id="yearTotal" class="text-2xl font-bold">¥0</p>
+    </div>
+    <div class="bg-red-600 text-white rounded-xl p-4">
+      <p class="text-sm opacity-80">保証期限切れ間近</p>
+      <p id="warrantyAlert" class="text-2xl font-bold">0件</p>
+    </div>
+    <div class="bg-gray-700 text-white rounded-xl p-4 col-span-2 md:col-span-1">
+      <p class="text-sm opacity-80">総プロジェクト数</p>
+      <p id="projectCount" class="text-2xl font-bold">0</p>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
+    <h2 class="text-xl font-semibold text-orange-800 mb-4">プロジェクトを追加</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="projName" class="block text-sm font-medium text-gray-700 mb-1">プロジェクト名 *</label>
+        <input id="projName" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="例: 浴室タイル補修">
+      </div>
+      <div>
+        <label for="location" class="block text-sm font-medium text-gray-700 mb-1">場所</label>
+        <input id="location" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="例: 1階バスルーム">
+      </div>
+      <div>
+        <label for="cost" class="block text-sm font-medium text-gray-700 mb-1">費用（円）</label>
+        <input id="cost" type="number" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="0">
+      </div>
+      <div>
+        <label for="contractor" class="block text-sm font-medium text-gray-700 mb-1">業者名</label>
+        <input id="contractor" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="例: ○○リフォーム">
+      </div>
+      <div>
+        <label for="completedDate" class="block text-sm font-medium text-gray-700 mb-1">完了日</label>
+        <input id="completedDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
+      </div>
+      <div>
+        <label for="warrantyDate" class="block text-sm font-medium text-gray-700 mb-1">保証期限</label>
+        <input id="warrantyDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
+      </div>
+      <div class="md:col-span-2">
+        <label for="projNotes" class="block text-sm font-medium text-gray-700 mb-1">メモ</label>
+        <input id="projNotes" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="使用材料・注意事項など">
+      </div>
+    </div>
+    <button onclick="addProject()" class="mt-4 bg-orange-700 hover:bg-orange-800 text-white font-semibold px-6 py-2 rounded-lg transition" aria-label="プロジェクトを追加">
+      追加する
+    </button>
+  </div>
+
+  <!-- Projects -->
+  <div id="projectList" class="space-y-4"></div>
+  <p id="empty-msg" class="text-center text-gray-400 py-12 hidden">プロジェクトがありません。最初の修繕記録を追加しましょう。</p>
+</div>
+
+<script>
+function getProjects() {
+  try { return JSON.parse(localStorage.getItem('homeProjects') || '[]'); } catch(e) { return []; }
+}
+function saveProjects(p) {
+  localStorage.setItem('homeProjects', JSON.stringify(p));
+}
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(today());
+  const d = new Date(dateStr);
+  return Math.floor((d - now) / (1000 * 60 * 60 * 24));
+}
+function thisYear() {
+  return new Date().getFullYear().toString();
+}
+
+function addProject() {
+  const name = document.getElementById('projName').value.trim();
+  if (!name) { alert('プロジェクト名は必須です'); return; }
+  const proj = {
+    id: Date.now(),
+    name,
+    location: document.getElementById('location').value.trim(),
+    cost: parseInt(document.getElementById('cost').value) || 0,
+    contractor: document.getElementById('contractor').value.trim(),
+    completedDate: document.getElementById('completedDate').value,
+    warrantyDate: document.getElementById('warrantyDate').value,
+    notes: document.getElementById('projNotes').value.trim()
+  };
+  const projects = getProjects();
+  projects.unshift(proj);
+  saveProjects(projects);
+  ['projName', 'location', 'cost', 'contractor', 'completedDate', 'warrantyDate', 'projNotes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  render();
+}
+
+function deleteProject(id) {
+  saveProjects(getProjects().filter(p => p.id !== id));
+  render();
+}
+
+function fmt(n) {
+  return '¥' + n.toLocaleString();
+}
+
+function render() {
+  const projects = getProjects();
+  const container = document.getElementById('projectList');
+  const emptyMsg = document.getElementById('empty-msg');
+  container.innerHTML = '';
+
+  const yearTotal = projects
+    .filter(p => p.completedDate && p.completedDate.startsWith(thisYear()))
+    .reduce((s, p) => s + p.cost, 0);
+  const warrantyAlert = projects.filter(p => {
+    const d = daysUntil(p.warrantyDate);
+    return d !== null && d >= 0 && d <= 30;
+  }).length;
+
+  document.getElementById('yearTotal').textContent = fmt(yearTotal);
+  document.getElementById('warrantyAlert').textContent = warrantyAlert + '件';
+  document.getElementById('projectCount').textContent = projects.length;
+
+  if (projects.length === 0) {
+    emptyMsg.classList.remove('hidden');
+    return;
+  }
+  emptyMsg.classList.add('hidden');
+
+  projects.forEach(proj => {
+    const warrantyDays = daysUntil(proj.warrantyDate);
+    const warrantyWarning = warrantyDays !== null && warrantyDays >= 0 && warrantyDays <= 30;
+    const warrantyExpired = warrantyDays !== null && warrantyDays < 0;
+
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl shadow-md p-5 relative' + (warrantyWarning ? ' border-2 border-red-400' : '');
+
+    const header = document.createElement('div');
+    header.className = 'flex justify-between items-start mb-3';
+
+    const titleWrap = document.createElement('div');
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'text-lg font-bold text-gray-800';
+    titleEl.textContent = proj.name;
+    titleWrap.appendChild(titleEl);
+
+    if (proj.location) {
+      const loc = document.createElement('p');
+      loc.className = 'text-sm text-gray-500';
+      loc.textContent = '📍 ' + proj.location;
+      titleWrap.appendChild(loc);
+    }
+    header.appendChild(titleWrap);
+
+    const costEl = document.createElement('p');
+    costEl.className = 'text-xl font-bold text-orange-700';
+    costEl.textContent = fmt(proj.cost);
+    header.appendChild(costEl);
+
+    card.appendChild(header);
+
+    const details = document.createElement('div');
+    details.className = 'grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3';
+
+    const addDetail = (label, val) => {
+      if (!val) return;
+      const d = document.createElement('div');
+      const l = document.createElement('span');
+      l.className = 'font-medium text-gray-700';
+      l.textContent = label + ': ';
+      d.appendChild(l);
+      const v = document.createTextNode(val);
+      d.appendChild(v);
+      details.appendChild(d);
+    };
+
+    addDetail('業者', proj.contractor);
+    addDetail('完了日', proj.completedDate);
+
+    if (proj.warrantyDate) {
+      const wEl = document.createElement('div');
+      wEl.className = warrantyWarning ? 'text-red-600 font-semibold' : (warrantyExpired ? 'text-gray-400 line-through' : '');
+      const wLabel = document.createElement('span');
+      wLabel.className = 'font-medium';
+      wLabel.textContent = '保証期限: ';
+      wEl.appendChild(wLabel);
+      wEl.appendChild(document.createTextNode(proj.warrantyDate + (warrantyWarning ? ' ⚠️ ' + warrantyDays + '日後' : warrantyExpired ? ' (期限切れ)' : '')));
+      details.appendChild(wEl);
+    }
+
+    card.appendChild(details);
+
+    if (proj.notes) {
+      const notesEl = document.createElement('p');
+      notesEl.className = 'text-sm text-gray-500 italic';
+      notesEl.textContent = proj.notes;
+      card.appendChild(notesEl);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'absolute top-4 right-4 text-gray-300 hover:text-red-400 text-xl transition';
+    delBtn.textContent = '×';
+    delBtn.setAttribute('aria-label', proj.name + 'を削除');
+    delBtn.onclick = () => deleteProject(proj.id);
+    card.appendChild(delBtn);
+
+    container.appendChild(card);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
